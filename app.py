@@ -15,9 +15,7 @@ CORS(app)
 
 DATASET_PATH = "data/candidates.jsonl"
 
-DATASET_URL = (
-   "https://huggingface.co/datasets/WHITE3HACKER/Baldevchauhan_redrob-dataset/resolve/main/candidates.jsonl"
-)
+DATASET_URL = "https://huggingface.co/datasets/WHITE3HACKER/Baldevchauhan_redrob-dataset/resolve/main/candidates.jsonl"
 
 
 def download_dataset():
@@ -26,10 +24,7 @@ def download_dataset():
 
     os.makedirs("data", exist_ok=True)
 
-    response = requests.get(
-        DATASET_URL,
-        stream=True
-    )
+    response = requests.get(DATASET_URL, stream=True)
 
     response.raise_for_status()
 
@@ -45,19 +40,22 @@ def download_dataset():
 
                 total += len(chunk)
 
-                print(
-                    f"\rDownloaded: {total / 1024 / 1024:.2f} MB",
-                    end=""
-                )
+                print(f"\rDownloaded: {total / 1024 / 1024:.2f} MB", end="")
 
     print("\nDataset downloaded successfully.")
+
 
 if not os.path.exists(DATASET_PATH):
     download_dataset()
 
-candidates = load_candidates(DATASET_PATH)
 
-top100 = rank_candidates(candidates)
+global top100
+
+if top100 is None:
+
+    candidates = load_candidates(DATASET_PATH)
+
+    top100 = rank_candidates(candidates)
 
 
 def generate_reasoning(candidate):
@@ -65,9 +63,7 @@ def generate_reasoning(candidate):
     reasons = []
 
     if candidate["experience"] >= 5:
-        reasons.append(
-            f"{candidate['experience']} years of relevant experience"
-        )
+        reasons.append(f"{candidate['experience']} years of relevant experience")
 
     important = [
         "python",
@@ -79,77 +75,65 @@ def generate_reasoning(candidate):
         "faiss",
         "pinecone",
         "weaviate",
-        "qdrant"
+        "qdrant",
     ]
 
-    matched = [
-        skill
-        for skill in candidate["skills"]
-        if skill in important
-    ]
+    matched = [skill for skill in candidate["skills"] if skill in important]
 
     if matched:
-        reasons.append(
-            "Strong skills in "
-            + ", ".join(matched[:3])
-        )
+        reasons.append("Strong skills in " + ", ".join(matched[:3]))
 
     if candidate["github"] >= 70:
-        reasons.append(
-            "High GitHub activity"
-        )
+        reasons.append("High GitHub activity")
 
     if candidate["response_rate"] >= 0.8:
-        reasons.append(
-            "Excellent recruiter response rate"
-        )
+        reasons.append("Excellent recruiter response rate")
 
     if candidate["interview_rate"] >= 0.8:
-        reasons.append(
-            "Strong interview completion record"
-        )
+        reasons.append("Strong interview completion record")
 
     if candidate["profile_completeness"] >= 80:
-        reasons.append(
-            "Highly complete profile"
-        )
+        reasons.append("Highly complete profile")
 
     if candidate["verified_email"]:
-        reasons.append(
-            "Verified email"
-        )
+        reasons.append("Verified email")
 
     if candidate["verified_phone"]:
-        reasons.append(
-            "Verified phone"
-        )
+        reasons.append("Verified phone")
 
     if candidate["linkedin"]:
-        reasons.append(
-            "LinkedIn connected"
-        )
+        reasons.append("LinkedIn connected")
 
     if candidate["open_to_work"]:
-        reasons.append(
-            "Open to work"
-        )
+        reasons.append("Open to work")
 
     if not reasons:
-        return (
-            "Reasonable overall candidate profile."
-        )
+        return "Reasonable overall candidate profile."
 
     return ". ".join(reasons) + "."
 
 
+top100 = None
+
+
 @app.route("/api/candidates")
 def get_candidates():
+
+    global top100
+
+    if top100 is None:
+
+        candidates = load_candidates(DATASET_PATH)
+
+        top100 = rank_candidates(candidates)
 
     return jsonify(top100)
 
 
 @app.route("/api/candidate/<candidate_id>")
 def get_candidate(candidate_id):
+
+    candidates = load_candidates(DATASET_PATH)
 
     for candidate in candidates:
 
@@ -159,21 +143,11 @@ def get_candidate(candidate_id):
 
             score = score_candidate(features)
 
-            return jsonify({
+            return jsonify(
+                {"candidate_id": candidate["candidate_id"], "score": score, **features}
+            )
 
-                "candidate_id":
-                    candidate["candidate_id"],
-
-                "score":
-                    score,
-
-                **features
-
-            })
-
-    return jsonify({
-        "error":"Candidate not found"
-    }),404
+    return jsonify({"error": "Candidate not found"}), 404
 
 
 @app.route("/api/export")
@@ -181,46 +155,26 @@ def export_csv():
 
     rows = []
 
-    for index, candidate in enumerate(
-        top100,
-        start=1
-    ):
+    for index, candidate in enumerate(top100, start=1):
 
-        rows.append({
-
-            "candidate_id":
-                candidate["candidate_id"],
-
-            "rank":
-                index,
-
-            "score":
-                candidate["score"],
-
-            "reasoning":
-                generate_reasoning(candidate)
-
-        })
+        rows.append(
+            {
+                "candidate_id": candidate["candidate_id"],
+                "rank": index,
+                "score": candidate["score"],
+                "reasoning": generate_reasoning(candidate),
+            }
+        )
 
     df = pd.DataFrame(rows)
 
     csv_file = "output/registration-no.csv"
 
-    df.to_csv(
-        csv_file,
-        index=False
-    )
+    df.to_csv(csv_file, index=False)
 
-    return send_file(
-        csv_file,
-        as_attachment=True
-    )
+    return send_file(csv_file, as_attachment=True)
 
 
 if __name__ == "__main__":
 
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=5000, debug=True)

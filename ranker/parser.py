@@ -1,16 +1,20 @@
 import json
 
+
 def load_candidates(path):
 
-    candidates = []
+    with open(path, "r", encoding="utf-8") as file:
 
-    with open(path, "r", encoding="utf-8") as f:
+        for line in file:
 
-        for line in f:
+            line = line.strip()
 
-            if line.strip():
-                candidates.append(
-                    json.loads(line)
-                )
+            if not line:
+                continue
 
-    return candidates
+            try:
+                yield json.loads(line)
+
+            except json.JSONDecodeError:
+                # Skip invalid JSON lines
+                continue
