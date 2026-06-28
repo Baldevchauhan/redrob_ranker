@@ -1,0 +1,12 @@
+{
+  "name": "redrob-ranker",
+  "private": true,
+  "scripts": {
+    "frontend": "cd frontend && npm run dev",
+    "backend": "python app.py",
+    "dev": "concurrently \"python app.py\" \"cd frontend && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
