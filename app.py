@@ -112,7 +112,7 @@ top100 = None
 @app.route("/api/candidates")
 def get_candidates():
 
-    df = pd.read_csv("output/registration-no.csv")
+    df = pd.read_csv("output/registration-.csv")
 
     return jsonify(
         df.to_dict(orient="records")
