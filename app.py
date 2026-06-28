@@ -1,3 +1,5 @@
+import os
+import requests
 from flask import Flask, jsonify, send_file
 from flask_cors import CORS
 import pandas as pd
@@ -11,10 +13,49 @@ from ranker.scorer import score_candidate
 app = Flask(__name__)
 CORS(app)
 
+DATASET_PATH = "data/candidates.jsonl"
 
-candidates = load_candidates(
-    "data/candidates.jsonl"
+DATASET_URL = (
+   "https://huggingface.co/datasets/WHITE3HACKER/Baldevchauhan_redrob-dataset/resolve/main/candidates.jsonl"
 )
+
+
+def download_dataset():
+
+    print("Downloading dataset...")
+
+    os.makedirs("data", exist_ok=True)
+
+    response = requests.get(
+        DATASET_URL,
+        stream=True
+    )
+
+    response.raise_for_status()
+
+    total = 0
+
+    with open(DATASET_PATH, "wb") as file:
+
+        for chunk in response.iter_content(1024 * 1024):
+
+            if chunk:
+
+                file.write(chunk)
+
+                total += len(chunk)
+
+                print(
+                    f"\rDownloaded: {total / 1024 / 1024:.2f} MB",
+                    end=""
+                )
+
+    print("\nDataset downloaded successfully.")
+
+if not os.path.exists(DATASET_PATH):
+    download_dataset()
+
+candidates = load_candidates(DATASET_PATH)
 
 top100 = rank_candidates(candidates)
 
