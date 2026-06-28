@@ -109,19 +109,14 @@ def generate_reasoning(candidate):
 
 top100 = None
 
-
 @app.route("/api/candidates")
 def get_candidates():
 
-    global top100
+    df = pd.read_csv("output/registration-no.csv")
 
-    if top100 is None:
-
-        candidates = load_candidates(DATASET_PATH)
-
-        top100 = rank_candidates(candidates)
-
-    return jsonify(top100)
+    return jsonify(
+        df.to_dict(orient="records")
+    )
 
 
 @app.route("/api/candidate/<candidate_id>")
