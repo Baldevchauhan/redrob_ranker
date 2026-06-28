@@ -49,13 +49,7 @@ if not os.path.exists(DATASET_PATH):
     download_dataset()
 
 
-global top100
-
-if top100 is None:
-
-    candidates = load_candidates(DATASET_PATH)
-
-    top100 = rank_candidates(candidates)
+top100 = None
 
 
 def generate_reasoning(candidate):
@@ -153,6 +147,14 @@ def get_candidate(candidate_id):
 @app.route("/api/export")
 def export_csv():
 
+    global top100
+
+    if top100 is None:
+
+        candidates = load_candidates(DATASET_PATH)
+
+        top100 = rank_candidates(candidates)
+
     rows = []
 
     for index, candidate in enumerate(top100, start=1):
@@ -166,9 +168,11 @@ def export_csv():
             }
         )
 
-    df = pd.DataFrame(rows)
+    os.makedirs("output", exist_ok=True)
 
     csv_file = "output/registration-no.csv"
+
+    df = pd.DataFrame(rows)
 
     df.to_csv(csv_file, index=False)
 
