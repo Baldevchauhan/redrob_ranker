@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 export const getCandidates = () =>
@@ -12,6 +12,6 @@ export const getCandidate = (id) =>
 
 export const exportCSV = () =>
   window.open(
-    "http://localhost:5000/api/export",
+    `${import.meta.env.VITE_API_URL}/export`,
     "_blank"
   );
